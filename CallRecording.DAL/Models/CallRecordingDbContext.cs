@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace CallRecording.Models;
+namespace CallRecording.DAL.Models;
 
 public partial class CallRecordingDbContext : DbContext
 {
@@ -20,13 +20,13 @@ public partial class CallRecordingDbContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlite("Data Source=C:\\Users\\ArciV\\source\\repos\\CallRecording\\CallRecording\\DB\\CallRecordingDB.db");
+        => optionsBuilder.UseSqlite("Data Source=C:\\Users\\ArciV\\source\\repos\\CallRecording\\CallRecording.DAL\\DB\\CallRecordingDB.db");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Event>(entity =>
         {
-            entity.HasOne(d => d.UserNavigation).WithMany(p => p.Events).OnDelete(DeleteBehavior.ClientSetNull);
+            entity.HasOne(d => d.User).WithMany(p => p.Events).OnDelete(DeleteBehavior.ClientSetNull);
         });
 
         OnModelCreatingPartial(modelBuilder);

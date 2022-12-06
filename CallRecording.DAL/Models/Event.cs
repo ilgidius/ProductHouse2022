@@ -4,13 +4,13 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace CallRecording.Models;
+namespace CallRecording.DAL.Models;
 
 [Index("Id", IsUnique = true)]
 public partial class Event
 {
-    [Column("user")]
-    public long User { get; set; }
+    [Column("user_id")]
+    public long UserId { get; set; }
 
     [Key]
     [Column("ID")]
@@ -31,7 +31,7 @@ public partial class Event
     [Column("value")]
     public string Value { get; set; } = null!;
 
-    [ForeignKey("User")]
+    [ForeignKey("UserId")]
     [InverseProperty("Events")]
-    public virtual User UserNavigation { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
 }

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace CallRecording.Models;
+namespace CallRecording.DAL.Models;
 
 [Index("Id", IsUnique = true)]
 [Index("Login", IsUnique = true)]
@@ -23,6 +23,6 @@ public partial class User
     [Column("role")]
     public string Role { get; set; } = null!;
 
-    [InverseProperty("UserNavigation")]
+    [InverseProperty("User")]
     public virtual ICollection<Event> Events { get; } = new List<Event>();
 }
