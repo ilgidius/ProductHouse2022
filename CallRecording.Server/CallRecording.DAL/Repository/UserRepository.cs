@@ -1,47 +1,48 @@
-﻿using CallRecording.Common.Repository;
-using CallRecording.DAL.Models;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CallRecording.DAL;
+using CallRecording.DAL.Models;
+using CallRecording.Common.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace CallRecording.DAL.Repository
 {
-    public class EventRepository : IRepository<Event>
+    public class UserRepository : IRepository<User>
     {
         private CallRecordingDbContext db;
-        public EventRepository()
+        public UserRepository()
         {
             this.db = new CallRecordingDbContext();
         }
 
-        public IEnumerable<Event> GetList()
+        public IEnumerable<User> GetList()
         {
-            return db.Events;
+            return db.Users;
         }
 
-        public Event GetById(int id)
+        public User GetById(int id)
         {
-            return db.Events.Find(id);
+            return db.Users.Find(Convert.ToInt64(id));
         }
 
-        public void Create(Event callEvent)
+        public void Create(User user)
         {
-            db.Events.Add(callEvent);
+            db.Users.Add(user);
         }
 
-        public void Update(Event callEvent)
+        public void Update(User user)
         {
-            db.Entry(callEvent).State = EntityState.Modified;
+            db.Entry(user).State = EntityState.Modified;
         }
 
-        public void Delete(Event callEvent)
+        public void Delete(User user)
         {
-            int.TryParse(db.Events.Entry(callEvent).Entity.Id.ToString(), out int id);
-            if (callEvent != null)
-                db.Events.Remove(callEvent);
+            int.TryParse(db.Users.Entry(user).Entity.Id.ToString(), out int id);
+            if (user != null)
+                db.Users.Remove(user);
         }
 
         public void Save()

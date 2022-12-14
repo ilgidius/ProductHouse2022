@@ -13,11 +13,19 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
 builder.Services.AddScoped<IRepository<User>, UserRepository>();
 builder.Services.AddScoped<IRepository<Event>, EventRepository>();
 builder.Services.AddScoped<IUserValidation, UserValidation>();
 
 var app = builder.Build();
+
+//var webSocketOptions = new WebSocketOptions
+//{
+ //   KeepAliveInterval = TimeSpan.FromMinutes(2)
+//};
+
+//app.UseWebSockets(webSocketOptions);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

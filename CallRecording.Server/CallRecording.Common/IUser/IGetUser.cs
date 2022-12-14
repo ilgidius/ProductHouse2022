@@ -8,6 +8,9 @@ namespace CallRecording.Common.IUser
 {
     public interface IGetUser
     {
+        User GetUserByName(string username);
+        User GetUserById(int id);
+        
 
     }
 }
