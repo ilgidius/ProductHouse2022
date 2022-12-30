@@ -1,4 +1,4 @@
-﻿using CallRecording.Common.Repository;
+﻿using CallRecording.Common.IRepository;
 using CallRecording.DAL.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -17,14 +17,14 @@ namespace CallRecording.DAL.Repository
             this.db = new CallRecordingDbContext();
         }
 
-        public IEnumerable<Event> GetList()
+        public IEnumerable<Event> GetAll()
         {
             return db.Events;
         }
 
-        public Event GetById(int id)
+        public Event? GetById(long id)
         {
-            return db.Events.Find(Convert.ToInt64(id));
+            return db.Events.Find(id);
         }
 
         public void Create(Event callEvent)
@@ -37,11 +37,13 @@ namespace CallRecording.DAL.Repository
             db.Entry(callEvent).State = EntityState.Modified;
         }
 
-        public void Delete(Event callEvent)
+        public void Delete(long id)
         {
-            int.TryParse(db.Events.Entry(callEvent).Entity.Id.ToString(), out int id);
+            Event? callEvent = db.Events.Find(id);
             if (callEvent != null)
+            {
                 db.Events.Remove(callEvent);
+            }
         }
 
         public void Save()

@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CallRecording.Common.Repository
+﻿namespace CallRecording.Common.IRepository
 {
-    public interface IRepository<T> : IDisposable where T : class
+    public interface IRepository<T> : IDisposable
+        where T : class
     {
-        IEnumerable<T> GetList();
-        T GetById(int id);
+        IEnumerable<T> GetAll();
+        T? GetById(long id);
         void Create(T item);
         void Update(T item);
-        void Delete(T item);
+        void Delete(long id);
         void Save();
     }
 }

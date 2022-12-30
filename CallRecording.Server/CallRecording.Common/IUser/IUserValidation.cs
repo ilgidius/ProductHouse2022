@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CallRecording.Common.IUser
+﻿namespace CallRecording.Common.IUser
 {
-    public interface IUserValidation
+    public interface IUserValidation<TUser, TLoginUser> 
+        where TUser : class 
+        where TLoginUser : class
     {
-        bool UserAuthorized(string username, string password);
-        string UserRole(string username);
+        TUser? Authentificate(TLoginUser userLogin);
+        string Generate(TUser user);
     }
 }

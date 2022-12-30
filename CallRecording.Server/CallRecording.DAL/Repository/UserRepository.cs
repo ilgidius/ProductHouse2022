@@ -5,27 +5,30 @@ using System.Text;
 using System.Threading.Tasks;
 using CallRecording.DAL;
 using CallRecording.DAL.Models;
-using CallRecording.Common.Repository;
+using CallRecording.Common.IRepository;
 using Microsoft.EntityFrameworkCore;
 
 namespace CallRecording.DAL.Repository
 {
-    public class UserRepository : IRepository<User>
+    public class UserRepository : IRepository<User>, IUserRepository<User>
     {
-        private CallRecordingDbContext db;
+        private readonly CallRecordingDbContext db;
         public UserRepository()
         {
             this.db = new CallRecordingDbContext();
         }
 
-        public IEnumerable<User> GetList()
+        /*
+         * Implementation of IRepository<T> 
+         */
+        public IEnumerable<User> GetAll()
         {
             return db.Users;
         }
 
-        public User GetById(int id)
+        public User? GetById(long id)
         {
-            return db.Users.Find(Convert.ToInt64(id));
+            return db.Users.Find(id);
         }
 
         public void Create(User user)
@@ -38,11 +41,13 @@ namespace CallRecording.DAL.Repository
             db.Entry(user).State = EntityState.Modified;
         }
 
-        public void Delete(User user)
+        public void Delete(long id)
         {
-            int.TryParse(db.Users.Entry(user).Entity.Id.ToString(), out int id);
+            User? user = db.Users.Find(id);
             if (user != null)
+            {
                 db.Users.Remove(user);
+            }
         }
 
         public void Save()
@@ -68,6 +73,44 @@ namespace CallRecording.DAL.Repository
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        /*
+         * Implementation of IUserRepository<T> 
+         */
+        public IEnumerable<User> GetUserByRole(string role)
+        {
+            /* LINQ query
+            var query = from u in GetAll()
+                        where u.Role == role
+                        orderby u.Login
+                        select u;
+            */
+            return db.Users.Where(u => u.Role == role);
+        }
+
+        public User? GetUserByName(string login)
+        {
+            return db.Users.Where(u => u.Login == login).FirstOrDefault();
+        }
+
+        public long GetUserIdByName(string login)
+        {
+            User? user = GetUserByName(login);
+            if(user != null)
+            {
+                return user.Id;
+            }
+            throw new Exception("User not found");
+        }
+
+        public void DeleteUserByName(string login)
+        {
+            User? user = GetUserByName(login);
+            if (user != null)
+            {
+                db.Users.Remove(user);
+            }
         }
     }
 }
