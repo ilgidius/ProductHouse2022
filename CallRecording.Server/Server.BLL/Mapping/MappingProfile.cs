@@ -23,6 +23,9 @@ namespace Server.BLL.Mapping
             CreateMap<Event, EventModel>().ReverseMap();
             CreateMap<Event, NewEventWithUserId>().ReverseMap();
             CreateMap<Event, NewEventWithUsername>().ReverseMap();
+
+            CreateMap<EventModel, NewEventWithUserId>().ReverseMap();
+            CreateMap<EventModel, NewEventWithUsername>().ReverseMap();
         }
     }
 }

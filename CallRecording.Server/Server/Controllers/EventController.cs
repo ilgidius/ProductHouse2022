@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Server.Common.Classes.Models.Common;
 using Server.Common.Classes.Models.EventModels;
@@ -15,16 +16,23 @@ namespace Server.API.Controllers
     {
         private readonly ILogger<UserController> _logger;
         private readonly IEventManager _eventManager;
+        private readonly IEventNotifyService _notifyService;
+        private readonly IMapper _mapper;
 
         /// <summary>
         /// Event controller constructor
         /// </summary>
         /// <param name="logger"></param>
         /// <param name="eventManager"></param>
-        public EventController(ILogger<UserController> logger, IEventManager eventManager)
+        /// <param name="notifyService"></param>
+        /// <param name="mapper"></param>
+        public EventController(ILogger<UserController> logger, IEventManager eventManager, IEventNotifyService notifyService,
+            IMapper mapper)
         {
             _logger = logger;
             _eventManager = eventManager;
+            _notifyService = notifyService;
+            _mapper = mapper;
         }
 
         /// <summary>
@@ -65,13 +73,13 @@ namespace Server.API.Controllers
         /// <response code="401">The request was not sent by an administrator</response>
         [Authorize (Roles = "admin")]
         [HttpGet("username/{username}")]
-        [ProducesResponseType(typeof(List<EventModel>), 200)]
+        [ProducesResponseType(typeof(List<Common.Classes.Models.Common.EventModel>), 200)]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
         public IActionResult GetEventsByUsername(string username)
         {
-            List<EventModel> data = _eventManager.GetEventsForRelevantUser(username);
+            List<Common.Classes.Models.Common.EventModel> data = _eventManager.GetEventsForRelevantUser(username);
             if (data == null)
             {
                 return BadRequest();
@@ -83,6 +91,7 @@ namespace Server.API.Controllers
             return Ok(data);
         }
 
+        /*
         /// <summary>
         /// Add new event fore relevant user by user id (administrator only)
         /// </summary>
@@ -99,10 +108,12 @@ namespace Server.API.Controllers
         {
             if (_eventManager.AddNewEventById(newEvent))
             {
+                _notifyService.AddNotification(_mapper.Map<EventModel>(newEvent));
                 return Ok();
             }
             return BadRequest();
         }
+        */
 
         /// <summary>
         /// Add new event fore relevant user by username (administrator only)
@@ -120,6 +131,7 @@ namespace Server.API.Controllers
         {
             if (_eventManager.AddNewEventByUsername(newEvent))
             {
+                _notifyService.AddNotification(_mapper.Map<EventModel>(newEvent));
                 return Ok();
             }
             return BadRequest();

@@ -12,7 +12,7 @@ namespace Server.Common.Interfaces.Models.IEventModel
     {
         bool AddNewEventById(NewEventWithUserId newEvent);
         bool AddNewEventByUsername(NewEventWithUsername newEvent);
-        List<EventModel> GetEventsForRelevantUser(string username);
-        List<EventModel> GetEventsForRelevantUser(long id);
+        List<Classes.Models.Common.EventModel> GetEventsForRelevantUser(string username);
+        List<Classes.Models.Common.EventModel> GetEventsForRelevantUser(long id);
     }
 }

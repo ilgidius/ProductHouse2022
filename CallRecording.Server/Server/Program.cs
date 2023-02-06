@@ -77,6 +77,7 @@ builder.Services.AddScoped<IUserManager, UserManager>();
 //Event
 builder.Services.AddScoped<IEventRepository<Event, EventFilter>, EventRepository>();
 builder.Services.AddScoped<IEventManager, EventManager>();
+builder.Services.AddSingleton<IEventNotifyService, NotificationService>(); 
 
 //Automapping
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
