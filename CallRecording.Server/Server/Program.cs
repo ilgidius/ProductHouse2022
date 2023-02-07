@@ -1,19 +1,17 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Server.BLL.Managers.EventManager;
+using Server.BLL.Managers.NotificationService;
 using Server.BLL.Managers.UserManager;
 using Server.BLL.Mapping;
-using Server.Common.Classes.Models.Common;
-using Server.Common.Classes.Models.EventModels;
-using Server.Common.Classes.Models.UserModels;
 using Server.Common.Interfaces.Models.IEventModel;
+using Server.Common.Interfaces.Models.INotification;
 using Server.Common.Interfaces.Models.IUserModel;
 using Server.DAL.Models;
 using Server.DAL.Repository;
-using System.Net.Sockets;
-using System.Net;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using Server.BLL.Background;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,9 +73,16 @@ builder.Services.AddScoped<IUserRepository<User>, UserRepository>();
 builder.Services.AddScoped<IUserManager, UserManager>();
 
 //Event
-builder.Services.AddScoped<IEventRepository<Event, EventFilter>, EventRepository>();
+builder.Services.AddScoped<IEventRepository<Event>, EventRepository>();
 builder.Services.AddScoped<IEventManager, EventManager>();
-builder.Services.AddSingleton<IEventNotifyService, NotificationService>(); 
+
+//Notifications
+builder.Services.AddSingleton<INotificationService, NotificationService>();
+
+//Hosted Services
+builder.Services.AddScoped<BackgroundPeriodicService>();
+builder.Services.AddSingleton<PeriodicHostedService>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<PeriodicHostedService>());
 
 //Automapping
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
@@ -93,16 +98,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+
+app.UseAuthorization();
+
 var webSocketOptions = new WebSocketOptions
 {
     KeepAliveInterval = TimeSpan.FromMinutes(2)
 };
 
 app.UseWebSockets(webSocketOptions);
-
-app.UseAuthentication();
-
-app.UseAuthorization();
 
 app.MapControllers();
 

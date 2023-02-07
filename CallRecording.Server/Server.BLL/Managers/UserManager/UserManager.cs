@@ -15,7 +15,7 @@ namespace Server.BLL.Managers.UserManager
 {
     public class UserManager : IUserManager
     {
-        private readonly ILogger<UserManager> _logger;
+        private readonly ILogger<UserManager> _log;
         private readonly IConfiguration _config;
         private readonly IUserRepository<User> _userRepository;
         private readonly IMapper _mapper;
@@ -23,7 +23,7 @@ namespace Server.BLL.Managers.UserManager
         public UserManager(ILogger<UserManager> logger,
             IConfiguration config, IUserRepository<User> userRepository, IMapper mapper)
         {
-            _logger = logger;
+            _log = logger;
             _config = config;
             _userRepository = userRepository;
             _mapper = mapper;
@@ -31,6 +31,7 @@ namespace Server.BLL.Managers.UserManager
 
         public bool IsExist(string login)
         {
+            _log.LogInformation($"Trying to verify whether '{login}' exists");
             return _userRepository.UserIsExist(login);
         }
 
@@ -38,23 +39,27 @@ namespace Server.BLL.Managers.UserManager
         {
             User addNewUser = _mapper.Map<User>(newUser);
             addNewUser.Password = Convert.ToBase64String(SHA256.Create().ComputeHash(Encoding.Default.GetBytes(addNewUser.Password)));
+            _log.LogInformation($"Try to add new {addNewUser.Role} '{addNewUser.Login}'");
             _userRepository.Create(addNewUser);
             _userRepository.Save();
         }
         public void DeleteUser(long id)
         {
+            _log.LogInformation($"Try to delete admin/user with id {id}");
             _userRepository.Delete(id);
             _userRepository.Save();
         }
 
         public void DeleteUser(string username)
         {
+            _log.LogInformation($"Try to delete admin/user with username {username}");
             _userRepository.DeleteUserByName(username);
             _userRepository.Save();
         }
 
         public bool IsSame(UserLogin user)
         {
+            _log.LogInformation($"Try to verify whether old password mathces new one for '{user.Login}'");
             User? curr = _userRepository.GetUserByName(user.Login);
             return curr.Password == Convert.ToBase64String(SHA256.Create().ComputeHash(Encoding.Default.GetBytes(user.Password)));
         }
@@ -63,6 +68,7 @@ namespace Server.BLL.Managers.UserManager
         {
             User? curr = _userRepository.GetUserByName(user.Login);
             curr.Password = Convert.ToBase64String(SHA256.Create().ComputeHash(Encoding.Default.GetBytes(user.Password)));
+            _log.LogInformation($"Try to update password for '{user.Login}'");
             _userRepository.Update(curr);
             _userRepository.Save();
         }
@@ -72,7 +78,7 @@ namespace Server.BLL.Managers.UserManager
             User? authentificate = _userRepository.GetUserByName(userLogin.Login ?? string.Empty);
             if (authentificate == null)
             {
-                _logger.LogWarning($"User '{userLogin.Login}' not found");
+                _log.LogWarning($"User '{userLogin.Login}' not found");
                 return null;
             }
             /* Extract the bytes
@@ -89,17 +95,17 @@ namespace Server.BLL.Managers.UserManager
             throw new UnauthorizedAccessException();*/
             else if (authentificate.Password != Convert.ToBase64String(SHA256.Create().ComputeHash(Encoding.Default.GetBytes(userLogin.Password))))
             {
-                _logger.LogWarning($"Password for '{userLogin.Login}' does not match");
+                _log.LogWarning($"Password for '{userLogin.Login}' does not match");
                 return null;
             }
-            _logger.LogInformation($"User '{userLogin.Login}' was authorized");
+            _log.LogInformation($"User '{userLogin.Login}' was authorized");
             UserModel authentificatedUser = _mapper.Map<UserModel>(authentificate);
             return authentificatedUser;
         }
 
         public string GenerateJwt(UserModel user)
         {
-            _logger.LogInformation($"Creating JWT for '{user.Login}'");
+            _log.LogInformation($"Creating JWT for '{user.Login}'");
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -113,7 +119,7 @@ namespace Server.BLL.Managers.UserManager
             var tocken = new JwtSecurityToken(issuer: _config["Jwt:Issuer"], audience: _config["Jwt:Audience"],
                 claims: claims, expires: DateTime.Now.AddMinutes(15), signingCredentials: credentials);
 
-            _logger.LogInformation($"JWT for '{user.Login}' was generated");
+            _log.LogInformation($"JWT for '{user.Login}' was generated");
 
             return new JwtSecurityTokenHandler().WriteToken(tocken);
         }

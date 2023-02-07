@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Server.Common.Classes.Models.Common;
 using Server.Common.Classes.Models.EventModels;
 using Server.Common.Interfaces.Models.IEventModel;
+using Server.Common.Interfaces.Models.INotification;
 
 namespace Server.API.Controllers
 {
@@ -14,24 +15,24 @@ namespace Server.API.Controllers
     [ApiController]
     public class EventController : ControllerBase
     {
-        private readonly ILogger<UserController> _logger;
+        private readonly ILogger<EventController> _log;
         private readonly IEventManager _eventManager;
-        private readonly IEventNotifyService _notifyService;
+        private readonly INotificationService _notificationService;
         private readonly IMapper _mapper;
 
         /// <summary>
         /// Event controller constructor
         /// </summary>
-        /// <param name="logger"></param>
+        /// <param name="log"></param>
         /// <param name="eventManager"></param>
-        /// <param name="notifyService"></param>
+        /// <param name="notificationService"></param>
         /// <param name="mapper"></param>
-        public EventController(ILogger<UserController> logger, IEventManager eventManager, IEventNotifyService notifyService,
-            IMapper mapper)
+        public EventController(ILogger<EventController> log, IEventManager eventManager,
+            INotificationService notificationService, IMapper mapper)
         {
-            _logger = logger;
+            _log = log;
             _eventManager = eventManager;
-            _notifyService = notifyService;
+            _notificationService = notificationService;
             _mapper = mapper;
         }
 
@@ -43,24 +44,34 @@ namespace Server.API.Controllers
         /// <response code="204">Events were not found</response>
         /// <response code="400">The user does not exist</response>
         /// <response code="401">The request was not sent by an administrator</response>
+        /// <response code="500">Internal server error</response>
         [Authorize (Roles = "admin")]
         [HttpGet("id/{id}")]
         [ProducesResponseType(typeof(List<EventModel>), 200)]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
+        [ProducesResponseType(typeof(string), 500)]
         public IActionResult GetEventsByUserId(long id)
         {
-            List<EventModel> data = _eventManager.GetEventsForRelevantUser(id);
-            if (data == null)
+            try
             {
-                return BadRequest(); //400
+                List<EventModel> data = _eventManager.GetEventsForRelevantUser(id);
+                if (data == null)
+                {
+                    return StatusCode(400); //400
+                }
+                else if (data.Count == 0)
+                {
+                    return StatusCode(204); //204
+                }
+                return StatusCode(200, data); //200
             }
-            else if (data.Count == 0)
+            catch (Exception ex)
             {
-                return NoContent(); //204
+                _log.LogError(ex.Message, ex);
+                return StatusCode(500, ex.Message);
             }
-            return Ok(data); //200
         }
 
         /// <summary>
@@ -71,49 +82,35 @@ namespace Server.API.Controllers
         /// <response code="204">Events were not found</response>
         /// <response code="400">The user does not exist</response>
         /// <response code="401">The request was not sent by an administrator</response>
+        /// <response code="500">Internal server error</response>
         [Authorize (Roles = "admin")]
         [HttpGet("username/{username}")]
-        [ProducesResponseType(typeof(List<Common.Classes.Models.Common.EventModel>), 200)]
+        [ProducesResponseType(typeof(List<EventModel>), 200)]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
+        [ProducesResponseType(typeof(string), 500)]
         public IActionResult GetEventsByUsername(string username)
         {
-            List<Common.Classes.Models.Common.EventModel> data = _eventManager.GetEventsForRelevantUser(username);
-            if (data == null)
+            try
             {
-                return BadRequest();
+                List<EventModel> data = _eventManager.GetEventsForRelevantUser(username);
+                if (data == null)
+                {
+                    return StatusCode(400);
+                }
+                else if (data.Count == 0)
+                {
+                    return StatusCode(204);
+                }
+                return StatusCode(200, data);
             }
-            else if (data.Count == 0)
+            catch (Exception ex)
             {
-                return NotFound();
+                _log.LogError(ex.Message, ex);
+                return StatusCode(500, ex.Message);
             }
-            return Ok(data);
         }
-
-        /*
-        /// <summary>
-        /// Add new event fore relevant user by user id (administrator only)
-        /// </summary>
-        /// <param name="newEvent"></param>
-        /// <response code="200">Event was added</response>
-        /// <response code="400">The user does not exist</response>
-        /// <response code="401">The request was not sent by an administrator</response>
-        [Authorize (Roles = "admin")]
-        [HttpPost("id")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        public IActionResult AddNewEventWithUserId([FromBody] NewEventWithUserId newEvent)
-        {
-            if (_eventManager.AddNewEventById(newEvent))
-            {
-                _notifyService.AddNotification(_mapper.Map<EventModel>(newEvent));
-                return Ok();
-            }
-            return BadRequest();
-        }
-        */
 
         /// <summary>
         /// Add new event fore relevant user by username (administrator only)
@@ -122,19 +119,29 @@ namespace Server.API.Controllers
         /// <response code="200">List of events for relevant user</response>
         /// <response code="400">The user does not exist</response>
         /// <response code="401">The request was not sent by an administrator</response>
+        /// <response code="500">Internal server error</response>
         [Authorize (Roles = "admin")]
         [HttpPost("username")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
+        [ProducesResponseType(typeof(string), 500)]
         public IActionResult AddNewEventWithUsername([FromBody] NewEventWithUsername newEvent)
         {
-            if (_eventManager.AddNewEventByUsername(newEvent))
+            try
             {
-                _notifyService.AddNotification(_mapper.Map<EventModel>(newEvent));
-                return Ok();
+                if (_eventManager.AddNewEventByUsername(newEvent))
+                {
+                    _notificationService.AddEventIntoQueue(_mapper.Map<EventModel>(newEvent));
+                    return StatusCode(200);
+                }
+                return StatusCode(400);
             }
-            return BadRequest();
+            catch (Exception ex)
+            {
+                _log.LogError(ex.Message, ex);
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }

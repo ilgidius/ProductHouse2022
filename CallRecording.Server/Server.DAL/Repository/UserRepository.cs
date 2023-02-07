@@ -1,14 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Server.Common.Classes.Models.Common;
-using Server.Common.Interfaces.Models.Common;
 using Server.Common.Interfaces.Models.IUserModel;
 using Server.DAL.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Server.DAL.Repository
 {

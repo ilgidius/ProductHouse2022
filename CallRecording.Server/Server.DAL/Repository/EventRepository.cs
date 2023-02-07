@@ -1,18 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.Extensions.Logging;
-using Server.Common.Classes.Models.EventModels;
 using Server.Common.Interfaces.Models.IEventModel;
 using Server.DAL.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Server.DAL.Repository
 {
-    public class EventRepository : IEventRepository<Event, EventFilter>
+    public class EventRepository : IEventRepository<Event>
     {
         private readonly CallRecordingDbContext db;
         private bool disposed = false;
@@ -66,13 +58,19 @@ namespace Server.DAL.Repository
         {
             return db.Events.Where(u => u.UserId == userId).AsQueryable();
         }
-        public IEnumerable<Event> GetEventsForRelevantUserByFilter(EventFilter filter)
+
+        public void DeleteEventsOlderThan(DateTime date)
         {
-            throw new NotImplementedException();
-        }
-        public IEnumerable<Event> GetEventsByFilter(EventFilter filter)
-        {
-            throw new NotImplementedException();
+            IEnumerable<Event> events = db.Events.ToList();
+            List<Event> eventsToDelete = new List<Event>();
+            foreach (Event e in events)
+            {
+                if(Convert.ToDateTime(e.AddedTime) < date)
+                {
+                    eventsToDelete.Add(e);
+                }
+            }
+            db.Events.RemoveRange(eventsToDelete);
         }
 
         /*
