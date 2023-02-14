@@ -121,7 +121,7 @@ namespace Server.API.Controllers
         /// <response code="401">The request was not sent by an administrator</response>
         /// <response code="500">Internal server error</response>
         [Authorize (Roles = "admin")]
-        [HttpPost("username")]
+        [HttpPost]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]

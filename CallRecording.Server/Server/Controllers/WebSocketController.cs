@@ -4,6 +4,7 @@ using Server.Common.Classes.Models.Common;
 using Server.Common.Classes.Models.Notification;
 using Server.Common.Interfaces.Models.INotification;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.WebSockets;
 using System.Security.Claims;
@@ -16,11 +17,11 @@ namespace Server.API.Controllers
     /// </summary>
     [Route("api/wbs")]
     [ApiController]
-    public class WBSController : ControllerBase
+    public class WebSocketController : ControllerBase
     {
         private WebSocket? _webSocket;
         private SubscriptionContext? _subscriptionContext;
-        private readonly ILogger<WBSController> _log;
+        private readonly ILogger<WebSocketController> _log;
         private readonly INotificationService _notificationService;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
@@ -29,7 +30,7 @@ namespace Server.API.Controllers
         /// </summary>
         /// <param name="logger"></param>
         /// <param name="notificationService"></param>
-        public WBSController(ILogger<WBSController> logger, INotificationService notificationService)
+        public WebSocketController(ILogger<WebSocketController> logger, INotificationService notificationService)
         {
             _log = logger;
             _notificationService = notificationService;
@@ -100,17 +101,18 @@ namespace Server.API.Controllers
             }
 
             var buffer = new byte[1024 * 4];
-            var receiveResult = await webSocket.ReceiveAsync(
-                new ArraySegment<byte>(buffer), _cancellationTokenSource.Token);
-
+            
             try
             {
+                var receiveResult = await webSocket.ReceiveAsync(
+                    new ArraySegment<byte>(buffer), _cancellationTokenSource.Token);
+
                 while (!receiveResult.CloseStatus.HasValue)
                 {
                     Array.Clear(buffer, 0, buffer.Length);
 
                     receiveResult = await webSocket.ReceiveAsync(
-                        new ArraySegment<byte>(buffer), CancellationToken.None);
+                        new ArraySegment<byte>(buffer), _cancellationTokenSource.Token);
 
                     if (receiveResult.MessageType == WebSocketMessageType.Close)
                     {
@@ -126,6 +128,13 @@ namespace Server.API.Controllers
                     WebSocketCloseStatus.NormalClosure,
                     receiveResult.CloseStatusDescription,
                     _cancellationTokenSource.Token);
+            }
+            catch (WebSocketException ex)
+            {
+                _log.LogError("The client suddenly closed the connection");
+                Console.WriteLine(ex.Message);
+                _log.LogInformation($"Trying to unsubscribe '{_subscriptionContext.Login}' from {eventType} events");
+                _notificationService.Unsubscribe(_subscriptionContext);
             }
             catch
             {

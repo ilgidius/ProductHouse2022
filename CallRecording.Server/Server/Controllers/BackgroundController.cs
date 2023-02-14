@@ -11,15 +11,15 @@ namespace Server.API.Controllers
     /// </summary>
     [Route("api/background")]
     [ApiController]
-    public class Background : ControllerBase
+    public class BackgroundController : ControllerBase
     {
-        private readonly ILogger<WBSController> _log;
+        private readonly ILogger<WebSocketController> _log;
 
         /// <summary>
         /// Background Service controller constructor
         /// </summary>
         /// <param name="logger"></param>
-        public Background(ILogger<WBSController> logger)
+        public BackgroundController(ILogger<WebSocketController> logger)
         {
             _log = logger;
         }

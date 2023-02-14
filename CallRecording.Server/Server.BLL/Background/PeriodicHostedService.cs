@@ -37,11 +37,14 @@ namespace Server.BLL.Background
                     if (IsEnabled)
                     {
                         await using AsyncServiceScope asyncScope = _factory.CreateAsyncScope();
-                        BackgroundPeriodicService sampleService = asyncScope.ServiceProvider.GetRequiredService<BackgroundPeriodicService>();
-                        await sampleService.ClearOldEventsAsync(DateTime.Now - TimeSpan.FromDays(Convert.ToDouble(_config["PeriodicService:DeleteRowsOlderThan:Days"])) -
+                        BackgroundPeriodicService sampleService = 
+                            asyncScope.ServiceProvider.GetRequiredService<BackgroundPeriodicService>();
+                        await sampleService.ClearOldEventsAsync(DateTime.Now -
+                            TimeSpan.FromDays(Convert.ToDouble(_config["PeriodicService:DeleteRowsOlderThan:Days"])) -
                             TimeSpan.FromHours(Convert.ToDouble(_config["PeriodicService:DeleteRowsOlderThan:Hours"])) -
                             TimeSpan.FromMinutes(Convert.ToDouble(_config["PeriodicService:DeleteRowsOlderThan:Minutes"])) -
-                            TimeSpan.FromSeconds(Convert.ToDouble(_config["PeriodicService:DeleteRowsOlderThan:Seconds"])));
+                            TimeSpan.FromSeconds(Convert.ToDouble(_config["PeriodicService:DeleteRowsOlderThan:Seconds"])),
+                            stoppingToken);
                         _executionCount++;
                         _log.LogInformation($"Executed PeriodicHostedService - Count: {_executionCount}");
                     }

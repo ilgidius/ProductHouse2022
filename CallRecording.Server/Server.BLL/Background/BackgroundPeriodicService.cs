@@ -15,13 +15,16 @@ namespace Server.BLL.Background
             _eventRepository = eventRepository;
         }
 
-        public async Task ClearOldEventsAsync(DateTime date)
+        public async Task ClearOldEventsAsync(DateTime date, CancellationToken token)
         {
             await Task.Run(() =>
             {
-                _eventRepository.DeleteEventsOlderThan(date);
-                _eventRepository.Save();
-                _log.LogInformation($"Events older than {date} were deleted");
+                if (!token.IsCancellationRequested)
+                {
+                    _eventRepository.DeleteEventsOlderThan(date);
+                    _eventRepository.Save();
+                    _log.LogInformation($"Events older than {date} were deleted");
+                }
             });
         }
     }
