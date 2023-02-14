@@ -1,61 +1,109 @@
 ﻿using Client.Models;
-using Newtonsoft.Json;
-using System;
-using System.Text.Json.Serialization;
 using Client.Managers;
-using Client.Managers.UserManager;
-using Client.Managers.EventManager;
+using Client.Common.Models;
 
 string URL = "https://localhost:7192/api/";
+string command = string.Empty;
+UserManager currentUser = new UserManager();
 
-User user;
-Startup startup = new Startup();
-UserManager userManager = new UserManager();
-EventManager eventManager = new EventManager();
-
-do
-{
-    Console.WriteLine("Please enter your correct login and password.");
-    user = startup.Login(URL + "users/login");
-    Console.Clear();
-} while (user == null);
-
-Console.WriteLine($"Welcome {user.Login}!");
+currentUser.Authorization().Wait();
+Console.Clear();
+Console.WriteLine($"Welcome {currentUser.Username}!");
 
 while (true)
 {
-    Console.Write("Enter route: ");
-    string route = Console.ReadLine() ?? string.Empty;
-    if (route.Contains("add"))
+    if (currentUser.Role == "user")
     {
-        if (route.Contains("user"))
+        Console.WriteLine("You can use following commands:\n\treauthorize (change user)\n\tsubscribe\n\texit");
+        Console.Write("Enter command: ");
+
+        command = Console.ReadLine();
+        if (command.ToLower().Contains("subscribe"))
         {
-            userManager.AddNewUser(URL + "users", user.Token);
+            Console.WriteLine("Which of the following event types you want to receive?\nINIT | RINGING | START | VOICE | STOP");
+            Console.Write("Event type you'd like to sunscribe: ");
+
+            currentUser.WBS(Console.ReadLine().ToUpper());
         }
-        else if(route.Contains("event"))
+        else if (command.ToLower().Contains("chunked"))
         {
-            eventManager.AddEvent(URL + "events/", user.Token);
+            await currentUser.HttpManager.ChunkedRequest();
         }
     }
-    else if (route.Contains("connect"))
+    else if (currentUser.Role == "admin")
     {
-        await startup.WBS(URL + "ws", Console.ReadLine() ?? "Test message");
+        Console.WriteLine("You can use following commands:\n\treauthorize (change user)\n\tadd user\n\tadd event\n\tchange (user) password\n\t" +
+            "delete user\n\tget (posted) events \n\tperiodic service\n\texit");
+        Console.Write("Enter command: ");
+
+        command = Console.ReadLine();
+        if (command.ToLower().Contains("add"))
+        {
+            if (command.ToLower().Contains("user"))
+            {
+                User newUser = new User();
+                currentUser.HttpManager.PostAsync(URL + "users", "login", newUser.Username, "password", newUser.Password, "role", newUser.Role).Wait();
+            }
+            else if (command.ToLower().Contains("event"))
+            {
+                Event newEvent = new Event();
+                currentUser.HttpManager.PostAsync(URL + "events", "addedTime", newEvent.AddedTime, "sentTime", DateTime.Now.ToUniversalTime().ToString(),
+                    "eventType", newEvent.EventType, "key", newEvent.Key, "value", newEvent.Value, "login", currentUser.Username).Wait();
+            }
+        }
+        else if (command.ToLower().Contains("change"))
+        {
+            User passChange = new User(string.Empty);
+            currentUser.HttpManager.PutAsync(URL + "users", "login", passChange.Username, "password", passChange.Password).Wait();
+        }
+        else if (command.ToLower().Contains("delete"))
+        {
+            Console.WriteLine("By id or username?");
+            string choice = Console.ReadLine();
+            if (choice.ToLower().Contains("id"))
+            {
+                Console.Write("Enter id: ");
+                int.TryParse(Console.ReadLine(), out int id);
+                currentUser.HttpManager.DeleteAsync(URL + $"users/id/{id}").Wait();
+            }
+            Console.Write("Enter username: ");
+            currentUser.HttpManager.DeleteAsync(URL + $"users/username/{Console.ReadLine()}").Wait();
+        }
+        else if (command.ToLower().Contains("get"))
+        {
+            Console.WriteLine("By id or username?");
+            string choice = Console.ReadLine();
+            if (choice.ToLower().Contains("id"))
+            {
+                Console.Write("Enter id: ");
+                int.TryParse(Console.ReadLine(), out int id);
+                currentUser.HttpManager.GetAsync(URL + $"events/id/{id}").Wait();
+            }
+            Console.Write("Enter username: ");
+            currentUser.HttpManager.GetAsync(URL + $"events/username/{Console.ReadLine()}").Wait();
+        }
+        else if (command.ToLower().Contains("periodic"))
+        {
+            string state;
+            do
+            {
+                Console.Write("Enter state of periodic service: ");
+                state = Console.ReadLine();
+            } while (state.ToLower() != "true" && state.ToLower() != "false");
+            currentUser.HttpManager.PatchAsync(URL + $"background?State={state}").Wait();
+        }
     }
-    else if (route.Contains("delete u"))
+    if (command.ToLower().Contains("exit"))
     {
-        userManager.DeleteUser(URL + "users", user.Token);
-    }
-    else if(route.Contains("update p"))
-    {
-        userManager.UpdateUser(URL + "users", user.Token);
-    }
-    else if (route == "back" || route == "exit")
-    {
+        Console.WriteLine($"Bye, {currentUser.Username}!");
+        Task.Delay(1500).Wait();
         break;
     }
-    else
+    else if (command.ToLower().Contains("reauthorize"))
     {
-        Console.WriteLine("You can use following commands:\nadd user\nupdate user\ndelete user\nconnect\nback\nexit");
+        Console.Clear();
+        currentUser.Authorization();
+        Console.Clear();
     }
-    Console.WriteLine("\n*-----------------------------------------------------------------------------*\n\n");
+    Console.WriteLine("\n*----------------------------------------------------------------------------*\n\n");
 }
